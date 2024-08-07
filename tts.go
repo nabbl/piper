@@ -3,14 +3,15 @@ package piper
 import (
 	"bytes"
 	"fmt"
-	"github.com/adrg/xdg"
-	"github.com/amitybell/piper-asset"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	"github.com/adrg/xdg"
+	asset "github.com/amitybell/piper-asset"
 )
 
 type TTS struct {
@@ -23,7 +24,37 @@ type TTS struct {
 	piperDir string
 }
 
-func (t *TTS) Synthesize(text string) (wav []byte, err error) {
+type VoiceOptions struct {
+	// default is: 1.0
+	speed float32
+	// default is: 0.667
+	noise float32
+}
+
+type Option func(*VoiceOptions)
+
+func WithSpeed(speed float32) Option {
+	return func(vo *VoiceOptions) {
+		vo.speed = speed
+	}
+}
+
+func WithNoise(noise float32) Option {
+	return func(vo *VoiceOptions) {
+		vo.noise = noise
+	}
+}
+
+func (t *TTS) Synthesize(text string, opts ...Option) (wav []byte, err error) {
+	options := &VoiceOptions{
+		speed: 1.0,
+		noise: 0.667,
+	}
+
+	for _, opt := range opts {
+		opt(options)
+	}
+
 	stdoutFn := "-"
 	var stdout io.Writer
 	if runtime.GOOS != "windows" {
@@ -37,12 +68,23 @@ func (t *TTS) Synthesize(text string) (wav []byte, err error) {
 		stdoutFn = filepath.Join(tmpDir, "tts.wav")
 	}
 
-	stdin := strings.NewReader(text)
-	stderr := bytes.NewBuffer(nil)
-	cmd := exec.Command(t.piperExe,
+	args := []string{
 		"--model", t.onnxFn,
 		"--config", t.jsonFn,
-		"--output_file", stdoutFn)
+		"--output_file", stdoutFn,
+	}
+
+	if options.speed != 1.0 {
+		args = append(args, "--length_scale", fmt.Sprintf("%f", options.speed))
+	}
+	if options.noise != 0.667 {
+		args = append(args, "--noise_scale", fmt.Sprintf("%f", options.noise))
+	}
+
+	stdin := strings.NewReader(text)
+	stderr := bytes.NewBuffer(nil)
+	cmd := exec.Command(t.piperExe, args...)
+
 	cmd.Dir = t.piperDir
 	cmd.Stdin = stdin
 	cmd.Stdout = stdout
