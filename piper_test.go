@@ -26,12 +26,49 @@ func TestPiper(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		wav, err := tts.Synthesize("hello world", nil)
-		if err != nil {
-			t.Fatalf("%s: %s\n", name, err)
-		}
-		if len(wav) < 44 {
-			t.Fatalf("%s: Invalid wav file generated: len(%d)\n", name, len(wav))
-		}
+
+		// Test with default options
+		t.Run(name+"_default", func(t *testing.T) {
+			wav, err := tts.Synthesize("hello world")
+			if err != nil {
+				t.Fatalf("%s: %s\n", name, err)
+			}
+			if len(wav) < 44 {
+				t.Fatalf("%s: Invalid wav file generated: len(%d)\n", name, len(wav))
+			}
+		})
+
+		// Test with custom speed option
+		t.Run(name+"_custom_speed", func(t *testing.T) {
+			wav, err := tts.Synthesize("hello world", WithSpeed(1.2))
+			if err != nil {
+				t.Fatalf("%s: %s\n", name, err)
+			}
+			if len(wav) < 44 {
+				t.Fatalf("%s: Invalid wav file generated: len(%d)\n", name, len(wav))
+			}
+		})
+
+		// Test with custom noise option
+		t.Run(name+"_custom_noise", func(t *testing.T) {
+			wav, err := tts.Synthesize("hello world", WithNoise(0.5))
+			if err != nil {
+				t.Fatalf("%s: %s\n", name, err)
+			}
+			if len(wav) < 44 {
+				t.Fatalf("%s: Invalid wav file generated: len(%d)\n", name, len(wav))
+			}
+		})
+
+		// Test with both custom speed and noise options
+		t.Run(name+"_custom_speed_and_noise", func(t *testing.T) {
+			wav, err := tts.Synthesize("hello world", WithSpeed(1.2), WithNoise(0.5))
+			if err != nil {
+				t.Fatalf("%s: %s\n", name, err)
+			}
+			if len(wav) < 44 {
+				t.Fatalf("%s: Invalid wav file generated: len(%d)\n", name, len(wav))
+			}
+		})
 	}
 }

@@ -31,7 +31,30 @@ type VoiceOptions struct {
 	noise float32
 }
 
-func (t *TTS) Synthesize(text string, options *VoiceOptions) (wav []byte, err error) {
+type Option func(*VoiceOptions)
+
+func WithSpeed(speed float32) Option {
+	return func(vo *VoiceOptions) {
+		vo.speed = speed
+	}
+}
+
+func WithNoise(noise float32) Option {
+	return func(vo *VoiceOptions) {
+		vo.noise = noise
+	}
+}
+
+func (t *TTS) Synthesize(text string, opts ...Option) (wav []byte, err error) {
+	options := &VoiceOptions{
+		speed: 1.0,
+		noise: 0.667,
+	}
+
+	for _, opt := range opts {
+		opt(options)
+	}
+
 	stdoutFn := "-"
 	var stdout io.Writer
 	if runtime.GOOS != "windows" {
@@ -51,13 +74,11 @@ func (t *TTS) Synthesize(text string, options *VoiceOptions) (wav []byte, err er
 		"--output_file", stdoutFn,
 	}
 
-	if options != nil {
-		if options.speed != 0 {
-			args = append(args, "--length_scale", fmt.Sprintf("%f", options.speed))
-		}
-		if options.noise != 0 {
-			args = append(args, "--noise_scale", fmt.Sprintf("%f", options.noise))
-		}
+	if options.speed != 1.0 {
+		args = append(args, "--length_scale", fmt.Sprintf("%f", options.speed))
+	}
+	if options.noise != 0.667 {
+		args = append(args, "--noise_scale", fmt.Sprintf("%f", options.noise))
 	}
 
 	stdin := strings.NewReader(text)
