@@ -29,6 +29,8 @@ type VoiceOptions struct {
 	speed float32
 	// default is: 0.667
 	noise float32
+	// default is: 0.2
+	pause float32
 }
 
 type Option func(*VoiceOptions)
@@ -45,10 +47,17 @@ func WithNoise(noise float32) Option {
 	}
 }
 
+func WithPause(pause float32) Option {
+	return func(vo *VoiceOptions) {
+		vo.pause = pause
+	}
+}
+
 func (t *TTS) Synthesize(text string, opts ...Option) (wav []byte, err error) {
 	options := &VoiceOptions{
 		speed: 1.0,
 		noise: 0.667,
+		pause: 0.2,
 	}
 
 	for _, opt := range opts {
@@ -79,6 +88,9 @@ func (t *TTS) Synthesize(text string, opts ...Option) (wav []byte, err error) {
 	}
 	if options.noise != 0.667 {
 		args = append(args, "--noise_scale", fmt.Sprintf("%f", options.noise))
+	}
+	if options.pause != 0.2 {
+		args = append(args, "--sentence_silence", fmt.Sprintf("%f", options.pause))
 	}
 
 	stdin := strings.NewReader(text)
